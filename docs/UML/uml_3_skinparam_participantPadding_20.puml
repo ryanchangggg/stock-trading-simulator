@@ -1,0 +1,103 @@
+@startuml
+skinparam participantPadding 20
+skinparam boxPadding 10
+
+actor "User" as USER
+participant "OrderView" as VIEW
+participant "TradingFacade" as FACADE
+participant "OrderService" as ORDERSVC
+participant "PortfolioService" as PORFSVC
+participant "SimulationEngine" as ENGINE
+participant "OrderWatcher" as WATCHER
+participant "OrderRepository" as ORDERREPO
+participant "PortfolioRepository" as PORFREPO
+participant "TradeService" as TRADESVC
+participant "TradeHistoryRepository" as TRADEREPO
+participant "DatabaseConnection" as DB
+
+== User places limit sell order ==
+
+USER -> VIEW: selects "Sell (Limit)",\nsymbol="AAPL", qty=50,\nlimitPrice=$200.00
+VIEW -> FACADE: placeSellLimitOrder(\nsession, "AAPL", 50, $200.00)
+
+== Validation Phase ==
+
+FACADE -> PORFSVC: getHoldings(userId)
+PORFSVC -> PORFREPO: findByUserId(userId)
+PORFREPO --> PORFSVC: [Portfolio{AAPL, qty=100, avgCost=$185.40}]
+PORFSVC --> FACADE: [AAPL: 100 shares]
+
+note right FACADE: qty=50 <= held=100 ✓\nuser owns enough shares
+
+FACADE -> ORDERSVC: placeLimitOrder(\nuserId, "AAPL", 50, $200.00, SELL)
+
+ORDERSVC -> ORDERSVC: creates LimitOrder(\nuserId, "AAPL", 50,\nlimitPrice=$200.00, PENDING)
+
+== Persist pending order ==
+
+ORDERSVC -> ORDERREPO: save(LimitOrder{status=PENDING})
+ORDERREPO -> DB: INSERT INTO Orders\n(AAPL, SELL, 50, $200.00, PENDING)
+ORDERREPO --> ORDERSVC: Order{id=23, status=PENDING}
+
+ORDERSVC --> FACADE: Order{id=23, status=PENDING}
+FACADE --> VIEW: Result.success(Order{...})
+VIEW --> USER: "Limit sell order placed.\nOrder #23: Sell 50 AAPL\nwhen price reaches $200.00"
+
+== Simulation ticks forward ==
+note over ENGINE: ... time passes ...\nprice ticks advance
+
+ENGINE -> ENGINE: nextTick() → AAPL=$198.50
+ENGINE -> WATCHER: onTick(tick{AAPL=$198.50})
+WATCHER -> ORDERREPO: findPendingOrders()
+ORDERREPO --> WATCHER: [Order{id=23, AAPL, SELL, 50, limit=$200}]
+note right WATCHER: $198.50 < $200.00\norder NOT triggered yet
+
+ENGINE -> ENGINE: nextTick() → AAPL=$199.80
+ENGINE -> WATCHER: onTick(tick{AAPL=$199.80})
+WATCHER -> ORDERREPO: findPendingOrders()
+ORDERREPO --> WATCHER: [Order{id=23}]
+note right WATCHER: $199.80 < $200.00\nstill below limit
+
+ENGINE -> ENGINE: nextTick() → AAPL=$200.45
+ENGINE -> WATCHER: onTick(tick{AAPL=$200.45})
+
+WATCHER -> ORDERREPO: findPendingOrders()
+ORDERREPO --> WATCHER: [Order{id=23}]
+
+note right WATCHER: $200.45 >= $200.00 ✓\nTRIGGERED!
+
+== Fill the order ==
+
+WATCHER -> ORDERSVC: processPendingOrders($200.45)
+
+ORDERSVC -> ORDERREPO: findPendingOrders()
+ORDERREPO --> ORDERSVC: [Order{id=23}]
+
+ORDERSVC -> ORDERREPO: updateStatus(23, FILLED, now())
+ORDERREPO -> DB: UPDATE Orders SET status='FILLED'\nWHERE id=23
+ORDERREPO --> ORDERSVC: true
+
+ORDERSVC -> TRADESVC: recordTrade(Trade{\nuserId, "AAPL", SELL,\n50, $200.45, $10,022.50})
+TRADESVC -> TRADEREPO: save(trade)
+TRADEREPO -> DB: INSERT INTO TradeHistory\n(..., SELL, 50, $200.45)
+TRADEREPO --> TRADESVC: Trade{id=43}
+
+note right ORDERSVC: realisedP&L =\n50 x ($200.45 - $185.40)\n= 50 x $15.05 = $752.50!
+
+ORDERSVC -> PORFSVC: updateHolding(userId, "AAPL", -50, $185.40)
+PORFSVC -> PORFREPO: findByUserIdAndSymbol(userId, "AAPL")
+PORFREPO --> PORFSVC: Portfolio{AAPL, qty=100, avgCost=$185.40}
+PORFSVC -> PORFREPO: save(Portfolio{AAPL, qty=50, avgCost=$185.40})
+PORFREPO -> DB: UPDATE Portfolio SET qty=50\nWHERE userId=X AND symbol='AAPL'
+
+ORDERSVC -> USER: deposit($10,022.50)
+USER --> ORDERSVC: success (balance increased)
+
+== Notify ==
+
+ORDERSVC --> WATCHER: Trade{id=43, FILLED @ $200.45}
+WATCHER -> ENGINE: notifyObservers(trade)
+
+note over WATCHER: Order #23 filled:\nSold 50 AAPL @ $200.45\nP&L: +$752.50
+
+@enduml

@@ -1,0 +1,79 @@
+@startuml
+skinparam participantPadding 20
+skinparam boxPadding 10
+
+actor "User" as USER
+participant "MarketView" as VIEW
+participant "TradingFacade" as FACADE
+participant "OrderService" as ORDERSVC
+participant "PortfolioService" as PORFSVC
+participant "TradeService" as TRADESVC
+participant "MarketDataService" as MDATA
+participant "OrderRepository" as ORDERREPO
+participant "PortfolioRepository" as PORFREPO
+participant "TradeHistoryRepository" as TRADEREPO
+participant "DatabaseConnection" as DB
+participant "SimulationEngine" as ENGINE
+
+== User selects stock and enters quantity ==
+
+USER -> VIEW: selects "Buy (Market)",\nsymbol="AAPL", qty=100
+VIEW -> FACADE: placeBuyMarketOrder(\nsession, "AAPL", 100)
+
+== Validation Phase ==
+
+FACADE -> MDATA: getCurrentPrice("AAPL")
+MDATA --> FACADE: $185.40
+FACADE -> ORDERSVC: placeMarketOrder(\nuserId, "AAPL", 100, BUY)
+
+ORDERSVC -> ORDERREPO: findPendingOrders(userId)
+ORDERREPO --> ORDERSVC: [] (none blocking)
+
+ORDERSVC -> PORFSVC: getPortfolioSummary(userId)
+PORFSVC -> PORFREPO: findByUserId(userId)
+PORFREPO --> PORFSVC: holdings list
+PORFSVC -> MDATA: getCurrentPrice("AAPL")
+MDATA --> PORFSVC: $185.40
+PORFSVC --> ORDERSVC: PortfolioSummary{\ncash=$100,000.00,\ntotalValue=$91,000.00}
+
+note right ORDERSVC: totalCost = 100 x 185.40 = $18,540\ncash = $100,000 >= $18,540 ✓\nno shorting needed ✓
+
+== Execution Phase ==
+
+ORDERSVC -> ORDERSVC: creates MarketOrder(AAPL, 100, $185.40, BUY)
+
+ORDERSVC -> TRADESVC: recordTrade(Trade{\nuserId, "AAPL", BUY,\n100, $185.40, $18,540})
+TRADESVC -> TRADEREPO: save(trade)
+TRADEREPO -> DB: INSERT INTO TradeHistory\n(..., $18,540)
+DB --> TRADEREPO: id=42
+TRADEREPO --> TRADESVC: Trade{id=42}
+
+ORDERSVC -> PORFSVC: updateHolding(userId, "AAPL", +100, $185.40)
+PORFSVC -> PORFREPO: findByUserIdAndSymbol(userId, "AAPL")
+PORFREPO --> PORFSVC: null (no existing position)
+PORFSVC -> PORFREPO: save(Portfolio{\nuserId, "AAPL",\nqty=100, avgCost=$185.40})
+PORFREPO -> DB: INSERT INTO Portfolio\n(qty=100, avgCost=185.40)
+PORFREPO --> PORFSVC: Portfolio{id=7}
+
+ORDERSVC -> USER: withdraw($18,540)
+USER --> ORDERSVC: success (balance=$81,460)
+
+ORDERSVC -> ORDERREPO: save(order)
+ORDERREPO -> DB: INSERT INTO Orders\n(FILLED, $185.40)
+ORDERREPO --> ORDERSVC: Order{id=15}
+
+ORDERSVC --> FACADE: Trade{id=42, AAPL, BUY, 100 @ $185.40}
+
+== Notification ==
+
+FACADE -> ENGINE: notifyObservers(trade)
+ENGINE -> ENGINE: iterates observers
+ENGINE -> PortfolioUpdater: onTrade(trade)
+ENGINE -> MarketDisplay: onTrade(trade)
+
+FACADE --> VIEW: Result.success(Trade{...})
+
+VIEW -> VIEW: render portfolio summary\n(cash=$81,460,\nAAPL=100 shares @ $185.40)
+VIEW --> USER: displays confirmation:\n"Bought 100 AAPL @ $185.40\nTotal: $18,540.00\nNew Balance: $81,460.00"
+
+@enduml

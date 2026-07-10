@@ -1,0 +1,378 @@
+@startuml
+skinparam style strictuml
+skinparam backgroundColor #FEFEFE
+skinparam classFontColor #111111
+skinparam classBorderColor #333333
+skinparam classBackgroundColor #F5F5F5
+skinparam arrowColor #333333
+skinparam packageStyle rectangle
+
+package "com.stocktrader.model" as MODEL {
+  package "account" {
+    class User {
+      - id : long
+      - username : String
+      - passwordHash : String
+      - cashBalance : BigDecimal
+      - createdAt : LocalDateTime
+      + getId() : long
+      + getUsername() : String
+      + getCashBalance() : BigDecimal
+      + deposit(amount : BigDecimal) : void
+      + withdraw(amount : BigDecimal) : boolean
+    }
+    class Portfolio {
+      - id : long
+      - userId : long
+      - symbol : String
+      - quantity : int
+      - averageCost : BigDecimal
+      - lastUpdated : LocalDateTime
+      + getTotalValue(currentPrice : BigDecimal) : BigDecimal
+      + getUnrealizedPnl(currentPrice : BigDecimal) : BigDecimal
+      + addShares(qty : int, price : BigDecimal) : void
+      + removeShares(qty : int) : boolean
+    }
+  }
+  package "order" {
+    abstract class Order {
+      - id : long
+      - userId : long
+      - symbol : String
+      - quantity : int
+      - price : BigDecimal
+      - status : OrderStatus
+      - createdAt : LocalDateTime
+      - filledAt : LocalDateTime
+      + {abstract} validate() : void
+      + {abstract} execute(ctx : OrderContext) : Trade
+      + cancel() : void
+    }
+    class MarketOrder {
+      + validate() : void
+      + execute(ctx : OrderContext) : Trade
+    }
+    class LimitOrder {
+      - limitPrice : BigDecimal
+      + getLimitPrice() : BigDecimal
+      + validate() : void
+      + execute(ctx : OrderContext) : Trade
+    }
+    enum OrderStatus {
+      PENDING
+      FILLED
+      CANCELLED
+    }
+  }
+  package "stock" {
+    abstract class Stock {
+      - symbol : String
+      - companyName : String
+      - sector : String
+      + {abstract} getAssetType() : String
+    }
+    class EquityStock {
+      - marketCap : long
+      + getAssetType() : String
+    }
+  }
+  package "trade" {
+    class Trade {
+      - id : long
+      - userId : long
+      - symbol : String
+      - tradeType : TradeType
+      - quantity : int
+      - price : BigDecimal
+      - totalValue : BigDecimal
+      - tradeDate : LocalDateTime
+    }
+    enum TradeType {
+      BUY
+      SELL
+    }
+  }
+  package "simulation" {
+    class SimulationTick {
+      - symbol : String
+      - date : LocalDate
+      - open : BigDecimal
+      - high : BigDecimal
+      - low : BigDecimal
+      - close : BigDecimal
+      - volume : long
+    }
+  }
+}
+
+package "com.stocktrader.repository" as REPO {
+  interface UserRepository {
+    + findById(id : long) : Optional<User>
+    + findByUsername(username : String) : Optional<User>
+    + save(user : User) : User
+    + existsByUsername(username : String) : boolean
+  }
+  interface PortfolioRepository {
+    + findByUserId(userId : long) : List<Portfolio>
+    + findByUserIdAndSymbol(userId : long, symbol : String) : Optional<Portfolio>
+    + save(portfolio : Portfolio) : Portfolio
+  }
+  interface OrderRepository {
+    + findById(id : long) : Optional<Order>
+    + findByUserId(userId : long) : List<Order>
+    + findPendingOrders() : List<Order>
+    + save(order : Order) : Order
+    + updateStatus(id : long, status : OrderStatus, filledAt : LocalDateTime) : boolean
+  }
+  interface TradeHistoryRepository {
+    + findByUserId(userId : long) : List<Trade>
+    + save(trade : Trade) : Trade
+  }
+  class DataSourceFactory {
+    + {static} createUserRepository() : UserRepository
+    + {static} createPortfolioRepository() : PortfolioRepository
+    + {static} createOrderRepository() : OrderRepository
+    + {static} createTradeHistoryRepository() : TradeHistoryRepository
+  }
+  package "sqlite" {
+    class DatabaseConnection {
+      - instance : DatabaseConnection
+      - connection : Connection
+      + {static} getInstance() : DatabaseConnection
+      + getConnection() : Connection
+    }
+    class SqliteUserRepository
+    class SqlitePortfolioRepository
+    class SqliteOrderRepository
+    class SqliteTradeHistoryRepository
+  }
+}
+
+package "com.stocktrader.service" as SERVICE {
+  class UserService {
+    - userRepo : UserRepository
+    + register(username : String, password : String) : User
+    + login(username : String, password : String) : Optional<User>
+    + getBalance(userId : long) : BigDecimal
+  }
+  class PortfolioService {
+    - portfolioRepo : PortfolioRepository
+    + getHoldings(userId : long) : List<Portfolio>
+    + getTotalValue(userId : long) : BigDecimal
+    + getUnrealizedPnl(userId : long) : BigDecimal
+    + updateHolding(userId : long, symbol : String, qty : int, price : BigDecimal) : void
+  }
+  class OrderService {
+    - orderRepo : OrderRepository
+    - portfolioService : PortfolioService
+    + placeMarketOrder(userId : long, symbol : String, qty : int, type : TradeType) : Trade
+    + placeLimitOrder(userId : long, symbol : String, qty : int, limitPrice : BigDecimal, type : TradeType) : Order
+    + cancelOrder(orderId : long) : boolean
+    + processPendingOrders(currentPrice : BigDecimal) : void
+  }
+  class TradeService {
+    - tradeRepo : TradeHistoryRepository
+    + recordTrade(trade : Trade) : Trade
+    + getTradeHistory(userId : long) : List<Trade>
+  }
+  class MarketDataService {
+    - stocks : Map<String, Stock>
+    + loadFromCsv(directory : String) : void
+    + getAvailableStocks() : List<Stock>
+    + getCurrentPrice(symbol : String) : BigDecimal
+  }
+}
+
+package "com.stocktrader.engine" as ENGINE {
+  class SimulationEngine {
+    - instance : SimulationEngine
+    - clock : SimulationClock
+    - strategy : PriceSimulationStrategy
+    - observers : List<TradeObserver>
+    + {static} getInstance() : SimulationEngine
+    + setStrategy(strategy : PriceSimulationStrategy) : void
+    + registerObserver(observer : TradeObserver) : void
+    + removeObserver(observer : TradeObserver) : void
+    + notifyObservers(tick : SimulationTick) : void
+    + start() : void
+    + pause() : void
+    + resume() : void
+  }
+  interface SimulationClock {
+    + start() : void
+    + pause() : void
+    + resume() : void
+    + setSpeedMultiplier(multiplier : int) : void
+    + isRunning() : boolean
+  }
+  class SimulationClockImpl
+  interface PriceSimulationStrategy {
+    + hasNext() : boolean
+    + next() : SimulationTick
+    + getCurrentTick() : SimulationTick
+    + jumpToDate(date : LocalDate) : void
+  }
+  class ForwardSimulation
+  class HistoricalNavigation
+  class CsvPriceLoader {
+    + {static} loadFromCsv(filePath : String) : List<SimulationTick>
+  }
+}
+
+package "com.stocktrader.pattern" as PATTERN {
+  package "command" {
+    interface Command {
+      + execute() : void
+      + undo() : void
+      + getDescription() : String
+    }
+    class BuyOrderCommand
+    class SellOrderCommand
+    class CancelOrderCommand
+    class ExportHistoryCommand
+    class CommandHistory {
+      - history : Deque<Command>
+      + push(cmd : Command) : void
+      + undo() : void
+      + getHistory() : List<Command>
+    }
+  }
+  package "observer" {
+    interface TradeObserver {
+      + onTick(tick : SimulationTick) : void
+      + onTrade(trade : Trade) : void
+      + onOrderStatusChange(order : Order) : void
+    }
+    class PortfolioUpdater
+    class OrderWatcher
+    class MarketDisplay
+  }
+  package "factory" {
+    class OrderFactory {
+      + {static} createOrder(type : OrderType, params : Map) : Order
+    }
+    class ViewFactory {
+      + {static} createView(viewType : ViewType) : View
+    }
+  }
+  package "strategy" {
+    interface ReportExporter {
+      + export(trades : List<Trade>, out : OutputStream) : void
+    }
+    class CsvExporter
+    class JsonExporter
+  }
+}
+
+package "com.stocktrader.facade" as FACADE {
+  class TradingFacade {
+    - userService : UserService
+    - portfolioService : PortfolioService
+    - orderService : OrderService
+    - tradeService : TradeService
+    - marketDataService : MarketDataService
+    - engine : SimulationEngine
+    + registerUser(username : String, password : String) : Result<User>
+    + loginUser(username : String, password : String) : Result<Session>
+    + getDashboard(session : Session) : DashboardData
+    + placeBuyMarketOrder(session : Session, symbol : String, qty : int) : Result<Trade>
+    + placeSellMarketOrder(session : Session, symbol : String, qty : int) : Result<Trade>
+    + placeBuyLimitOrder(session : Session, symbol : String, qty : int, limitPrice : BigDecimal) : Result<Order>
+    + placeSellLimitOrder(session : Session, symbol : String, qty : int, limitPrice : BigDecimal) : Result<Order>
+    + cancelOrder(session : Session, orderId : long) : Result<Void>
+    + getPortfolio(session : Session) : PortfolioSummary
+    + getTradeHistory(session : Session) : List<Trade>
+    + getMarketData() : List<Stock>
+    + exportTrades(session : Session, exporter : ReportExporter) : void
+    + setSimulationSpeed(multiplier : int) : void
+    + pauseSimulation() : void
+    + resumeSimulation() : void
+  }
+}
+
+package "com.stocktrader.ui" as UI {
+  class MainMenu
+  class Session {
+    - user : User
+    - loggedInAt : LocalDateTime
+    + getUser() : User
+    + isActive() : boolean
+  }
+  package "view" {
+    abstract class View {
+      # session : Session
+      + render() : void
+      # {abstract} renderHeader() : void
+      # {abstract} renderBody() : void
+      # {abstract} renderFooter() : void
+    }
+    class DashboardView
+    class PortfolioView
+    class OrderView
+    class MarketView
+    class TradeHistoryView
+    class SimulationControlView
+  }
+}
+
+' ── Relationships ──────────────────────────────────────────
+
+' Inheritance
+MarketOrder --|> Order
+LimitOrder --|> Order
+EquityStock --|> Stock
+ForwardSimulation ..|> PriceSimulationStrategy
+HistoricalNavigation ..|> PriceSimulationStrategy
+SimulationClockImpl ..|> SimulationClock
+DashboardView --|> View
+PortfolioView --|> View
+OrderView --|> View
+MarketView --|> View
+TradeHistoryView --|> View
+SimulationControlView --|> View
+
+' Interface implementation
+SqliteUserRepository ..|> UserRepository
+SqlitePortfolioRepository ..|> PortfolioRepository
+SqliteOrderRepository ..|> OrderRepository
+SqliteTradeHistoryRepository ..|> TradeHistoryRepository
+BuyOrderCommand ..|> Command
+SellOrderCommand ..|> Command
+CancelOrderCommand ..|> Command
+ExportHistoryCommand ..|> Command
+PortfolioUpdater ..|> TradeObserver
+OrderWatcher ..|> TradeObserver
+MarketDisplay ..|> TradeObserver
+CsvExporter ..|> ReportExporter
+JsonExporter ..|> ReportExporter
+
+' Composition / Aggregation
+SimulationEngine o-- SimulationClock
+SimulationEngine o-- PriceSimulationStrategy
+SimulationEngine o-- TradeObserver : notifies
+CommandHistory o-- Command
+TradingFacade o-- UserService
+TradingFacade o-- PortfolioService
+TradingFacade o-- OrderService
+TradingFacade o-- TradeService
+TradingFacade o-- MarketDataService
+TradingFacade o-- SimulationEngine
+
+' Dependencies
+OrderService --> PortfolioService : uses
+OrderService --> OrderRepository : depends on
+OrderService --> TradeHistoryRepository : depends on
+UserService --> UserRepository : depends on
+PortfolioService --> PortfolioRepository : depends on
+TradeService --> TradeHistoryRepository : depends on
+MarketDataService --> CsvPriceLoader : uses
+DataSourceFactory --> SqliteUserRepository : creates
+DataSourceFactory --> SqlitePortfolioRepository : creates
+DataSourceFactory --> SqliteOrderRepository : creates
+DataSourceFactory --> SqliteTradeHistoryRepository : creates
+Order ..> OrderContext : <<use>>
+View --> TradingFacade : calls
+MainMenu --> TradingFacade : calls
+MainMenu --> Session : creates
+
+@enduml
