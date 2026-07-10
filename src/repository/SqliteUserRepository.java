@@ -3,7 +3,6 @@ package repository;
 import util.DatabaseConnection;
 
 import model.user.User;
-import repository.UserRepository;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

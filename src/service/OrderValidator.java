@@ -3,7 +3,6 @@ package service;
 import model.exception.InvalidOrderException;
 import model.market.Market;
 import model.order.Order;
-import model.order.StopLossOrder;
 import model.trade.TradeType;
 import model.user.User;
 import java.math.BigDecimal;

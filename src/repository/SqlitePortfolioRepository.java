@@ -4,7 +4,6 @@ import util.DatabaseConnection;
 
 import model.portfolio.Portfolio;
 import model.portfolio.Position;
-import repository.PortfolioRepository;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;

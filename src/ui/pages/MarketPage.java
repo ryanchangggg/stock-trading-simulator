@@ -4,7 +4,6 @@ import model.stock.Stock;
 import service.AppContext;
 import service.MarketDataService;
 import service.Session;
-import service.TradingService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.control.*;
@@ -18,17 +17,16 @@ import javafx.geometry.Insets;
 public class MarketPage {
 
     private final MarketDataService marketService;
-    private final TradingService tradingService;
     private final Session session;
     private final AppContext context;
 
     public MarketPage(AppContext ctx, Session session) {
         this.marketService = ctx.getMarketDataService();
-        this.tradingService = ctx.getTradingService();
         this.session = session;
         this.context = ctx;
     }
 
+    @SuppressWarnings("unchecked")
     public StackPane build() {
         VBox content = new VBox(16);
         content.setPadding(new Insets(0, 0, 0, 0));
@@ -39,7 +37,7 @@ public class MarketPage {
         );
 
         TableView<Stock> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         TableColumn<Stock, String> symCol = new TableColumn<>("Symbol");
         symCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getSymbol()));
@@ -53,7 +51,7 @@ public class MarketPage {
         TableColumn<Stock, String> priceCol = new TableColumn<>("Price");
         priceCol.setCellValueFactory(d -> new SimpleStringProperty(
             "$" + d.getValue().getCurrentPrice().setScale(2, java.math.RoundingMode.HALF_UP)));
-
+	
         table.getColumns().addAll(symCol, nameCol, sectorCol, priceCol);
         table.setItems(FXCollections.observableArrayList(
             marketService.getAvailableStocks().getValue()));

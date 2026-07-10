@@ -4,7 +4,6 @@ import strategy.LimitOrderExecutor;
 import strategy.MarketOrderExecutor;
 import strategy.OrderExecutionStrategy;
 import strategy.StopLossExecutor;
-import service.OrderValidator;
 import model.exception.InvalidOrderException;
 import model.market.Market;
 import model.order.Order;

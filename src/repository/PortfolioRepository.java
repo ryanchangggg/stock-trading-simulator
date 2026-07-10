@@ -1,7 +1,6 @@
 package repository;
 
 import model.portfolio.Portfolio;
-import java.util.Optional;
 
 /**
  * Repository interface for persisting and retrieving user portfolios.

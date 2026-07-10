@@ -9,7 +9,6 @@ import model.order.OrderType;
 import model.order.SellOrder;
 import model.order.StopLossOrder;
 import model.trade.TradeType;
-import repository.OrderRepository;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

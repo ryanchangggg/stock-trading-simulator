@@ -1,8 +1,4 @@
 package service;
-
-import service.ExecutionResult;
-import service.TradingEngine;
-import model.exception.InvalidOrderException;
 import model.market.Market;
 import model.order.*;
 import model.trade.Trade;

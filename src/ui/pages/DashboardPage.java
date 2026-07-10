@@ -1,12 +1,12 @@
 package ui.pages;
 
 import model.portfolio.Portfolio.PortfolioSummary;
-import model.stock.Stock;
 import service.*;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 /**
@@ -74,13 +74,13 @@ public class DashboardPage {
 
     private String getCash() {
         return portfolioService.getCashBalance(session)
-            .map(v -> v.setScale(2, BigDecimal.ROUND_HALF_UP).toString())
+            .map(v -> v.setScale(2, RoundingMode.HALF_UP).toString())
             .orElse("0.00");
     }
 
     private String getPortfolioValue() {
         return portfolioService.getSummary(session)
-            .map(s -> s.getTotalValue().setScale(2, BigDecimal.ROUND_HALF_UP).toString())
+            .map(s -> s.getTotalValue().setScale(2, RoundingMode.HALF_UP).toString())
             .orElse("0.00");
     }
 
@@ -92,7 +92,7 @@ public class DashboardPage {
 
     private String formatPnl(BigDecimal pnl) {
         String prefix = pnl.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "";
-        return prefix + "$" + pnl.setScale(2, BigDecimal.ROUND_HALF_UP).toString();
+        return prefix + "$" + pnl.setScale(2, RoundingMode.HALF_UP).toString();
     }
 
     private String getPnlClass() {

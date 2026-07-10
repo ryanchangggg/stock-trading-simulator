@@ -1,16 +1,15 @@
-package service;
+package engine;
 
-import model.exception.InsufficientFundsException;
-import model.exception.InvalidOrderException;
 import model.market.Market;
 import model.order.*;
-import model.portfolio.Portfolio;
 import model.stock.EquityStock;
 import model.trade.TradeType;
 import model.user.User;
 import repository.OrderRepository;
 import repository.TradeRepository;
 import repository.UserRepository;
+import service.ExecutionResult;
+import service.TradingEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

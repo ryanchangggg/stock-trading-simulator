@@ -13,6 +13,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Modal dialog for placing buy/sell/limit/stop-loss orders.
@@ -42,7 +43,7 @@ public class OrderDialog {
     }
 
     private Scene buildScene() {
-        String currentPrice = "$" + stock.getCurrentPrice().setScale(2, BigDecimal.ROUND_HALF_UP);
+        String currentPrice = "$" + stock.getCurrentPrice().setScale(2, RoundingMode.HALF_UP);
 
         Label title = new Label("Trade " + stock.getSymbol());
         title.getStyleClass().add("dialog-title");

@@ -2,7 +2,6 @@ package ui;
 
 import service.AppContext;
 import service.Session;
-import ui.*;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.*;
@@ -12,7 +11,6 @@ import ui.pages.PortfolioPage;
 import ui.pages.HistoryPage;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Main application window after login.
@@ -28,7 +26,6 @@ public class MainView {
     private final Runnable onLogout;
     private final StackPane contentArea = new StackPane();
     private final Map<String, StackPane> pages = new LinkedHashMap<>();
-    private String activePage = "";
 
     public MainView(AppContext context, Session session, Runnable onLogout) {
         this.context = context;
@@ -91,7 +88,6 @@ public class MainView {
     // ── Page routing ────────────────────────────────────
 
     private void showPage(String name) {
-        activePage = name;
         StackPane page = pages.get(name);
         if (page != null) {
             contentArea.getChildren().setAll(page);

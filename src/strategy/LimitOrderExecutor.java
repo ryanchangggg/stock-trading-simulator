@@ -5,7 +5,6 @@ import model.exception.InsufficientFundsException;
 import model.exception.InvalidOrderException;
 import model.market.Market;
 import model.order.Order;
-import model.order.OrderType;
 import model.trade.Trade;
 import model.trade.TradeType;
 import model.user.User;

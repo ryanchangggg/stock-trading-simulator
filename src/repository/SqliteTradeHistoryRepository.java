@@ -4,7 +4,6 @@ import util.DatabaseConnection;
 
 import model.trade.Trade;
 import model.trade.TradeType;
-import repository.TradeRepository;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

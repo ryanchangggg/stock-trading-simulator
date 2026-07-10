@@ -1,9 +1,6 @@
 package service;
 
-import service.ExecutionResult;
-import service.TradingEngine;
 import model.market.Market;
-import model.order.BuyOrder;
 import model.order.Order;
 import model.stock.EquityStock;
 import model.trade.Trade;

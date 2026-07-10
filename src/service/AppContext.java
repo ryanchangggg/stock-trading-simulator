@@ -1,6 +1,4 @@
 package service;
-
-import service.TradingEngine;
 import model.market.Market;
 import util.CsvDataLoader;
 import factory.RepositoryFactory;

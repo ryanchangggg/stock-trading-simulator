@@ -23,6 +23,7 @@ public class HistoryPage {
         this.session = session;
     }
 
+    @SuppressWarnings("unchecked")
     public StackPane build() {
         VBox content = new VBox(16);
 
@@ -32,7 +33,7 @@ public class HistoryPage {
         );
 
         TableView<Trade> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         table.getColumns().addAll(
             tc("Date", t -> t.getTradeDate().toLocalDate().toString()),

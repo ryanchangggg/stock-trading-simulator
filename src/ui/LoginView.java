@@ -3,7 +3,6 @@ package ui;
 import service.AuthenticationService;
 import service.Result;
 import service.Session;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -91,6 +90,7 @@ public class LoginView {
             onSuccess.accept(result.getValue());
         } else {
             errorLabel.setText(result.getErrorMessage());
+            onError.accept(result.getErrorMessage());
         }
     }
 

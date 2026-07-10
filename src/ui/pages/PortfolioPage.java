@@ -4,7 +4,6 @@ import model.portfolio.Position;
 import service.AppContext;
 import service.PortfolioService;
 import service.Session;
-import service.TradingService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.control.*;
@@ -19,17 +18,16 @@ import java.math.RoundingMode;
 public class PortfolioPage {
 
     private final PortfolioService portfolioService;
-    private final TradingService tradingService;
     private final Session session;
     private final AppContext context;
 
     public PortfolioPage(AppContext ctx, Session session) {
         this.portfolioService = ctx.getPortfolioService();
-        this.tradingService = ctx.getTradingService();
         this.session = session;
         this.context = ctx;
     }
 
+    @SuppressWarnings("unchecked")
     public StackPane build() {
         VBox content = new VBox(16);
         content.setPadding(new Insets(0, 0, 0, 0));
@@ -52,7 +50,7 @@ public class PortfolioPage {
 
         // Positions table
         TableView<Position> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().addAll(
             col("Symbol", p -> p.getSymbol()),
             col("Shares", p -> String.valueOf(p.getQuantity())),
