@@ -2,6 +2,7 @@ package service;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Generic result wrapper for service-layer operations.
@@ -26,6 +27,13 @@ public final class Result<T> {
         return new Result<>(true, Objects.requireNonNull(value), null);
     }
 
+    /**
+     * Creates a success result representing a void operation (no value).
+     */
+    public static Result<Void> success() {
+        return new Result<>(true, null, null);
+    }
+
     public static <T> Result<T> failure(String error) {
         return new Result<>(false, null,
             Objects.requireNonNull(error, "Error message must not be null"));
@@ -36,4 +44,25 @@ public final class Result<T> {
     public T getValue() { return value; }
     public Optional<String> getError() { return Optional.ofNullable(error); }
     public String getErrorMessage() { return error != null ? error : ""; }
+
+    /**
+     * Transforms the value if this is a success result.
+     *
+     * @param mapper the mapping function to apply to the value
+     * @param <U>    the new result type
+     * @return a new success result with the mapped value, or the same failure
+     */
+    public <U> Result<U> map(Function<? super T, ? extends U> mapper) {
+        if (success) {
+            return Result.success(mapper.apply(value));
+        }
+        return Result.failure(error);
+    }
+
+    /**
+     * Returns the value if this is a success result, otherwise the default.
+     */
+    public T orElse(T defaultValue) {
+        return success ? value : defaultValue;
+    }
 }

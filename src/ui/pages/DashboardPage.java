@@ -5,6 +5,7 @@ import model.stock.Stock;
 import service.*;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
+import javafx.geometry.Insets;
 import java.math.BigDecimal;
 import java.util.List;
 

@@ -6,6 +6,10 @@ import ui.*;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.*;
+import ui.pages.DashboardPage;
+import ui.pages.MarketPage;
+import ui.pages.PortfolioPage;
+import ui.pages.HistoryPage;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -97,18 +101,18 @@ public class MainView {
     // ── Pages ───────────────────────────────────────────
 
     private StackPane buildDashboard() {
-        return new com.stocktrader.ui.pages.DashboardPage(context, session).build();
+        return new DashboardPage(context, session).build();
     }
 
     private StackPane buildMarket() {
-        return new com.stocktrader.ui.pages.MarketPage(context, session).build();
+        return new MarketPage(context, session).build();
     }
 
     private StackPane buildPortfolio() {
-        return new com.stocktrader.ui.pages.PortfolioPage(context, session).build();
+        return new PortfolioPage(context, session).build();
     }
 
     private StackPane buildHistory() {
-        return new com.stocktrader.ui.pages.HistoryPage(context, session).build();
+        return new HistoryPage(context, session).build();
     }
 }

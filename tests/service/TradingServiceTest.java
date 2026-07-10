@@ -32,6 +32,7 @@ import static org.mockito.Mockito.*;
 class TradingServiceTest {
 
     @Mock private TradingEngine engine;
+    @Mock private Order order;
     @Mock private OrderRepository orderRepo;
     @Mock private TradeRepository tradeRepo;
     @Mock private UserRepository userRepo;
@@ -61,8 +62,8 @@ class TradingServiceTest {
     @Test @DisplayName("buyMarket returns trade when engine succeeds")
     void buyMarketSuccess() {
         Trade trade = new Trade(1, 1, "AAPL", TradeType.BUY, 10, new BigDecimal("185.40"));
-        when(engine.placeOrder(any(), any(), any()))
-            .thenReturn(ExecutionResult.filled(mock(Order.class), trade));
+        doReturn(ExecutionResult.filled(order, trade))
+            .when(engine).placeOrder(any(), any(), any());
 
         Result<Trade> result = service.buyMarket(session, "AAPL", 10);
         assertTrue(result.isSuccess());
@@ -81,24 +82,24 @@ class TradingServiceTest {
     @Test @DisplayName("sellMarket returns trade when engine succeeds")
     void sellMarketSuccess() {
         Trade trade = new Trade(2, 1, "AAPL", TradeType.SELL, 10, new BigDecimal("185.40"));
-        when(engine.placeOrder(any(), any(), any()))
-            .thenReturn(ExecutionResult.filled(mock(Order.class), trade));
+        doReturn(ExecutionResult.filled(order, trade))
+            .when(engine).placeOrder(any(), any(), any());
         Result<Trade> result = service.sellMarket(session, "AAPL", 10);
         assertTrue(result.isSuccess());
     }
 
     @Test @DisplayName("buyLimit returns pending order")
     void buyLimitPending() {
-        when(engine.placeOrder(any(), any(), any()))
-            .thenReturn(ExecutionResult.pending(mock(Order.class)));
+        doReturn(ExecutionResult.pending(order))
+            .when(engine).placeOrder(any(), any(), any());
         Result<Order> result = service.buyLimit(session, "AAPL", 10, new BigDecimal("180.00"));
         assertTrue(result.isSuccess());
     }
 
     @Test @DisplayName("sellStopLoss places stop-loss order")
     void sellStopLoss() {
-        when(engine.placeOrder(any(), any(), any()))
-            .thenReturn(ExecutionResult.pending(mock(Order.class)));
+        doReturn(ExecutionResult.pending(order))
+            .when(engine).placeOrder(any(), any(), any());
         Result<Order> result = service.sellStopLoss(session, "AAPL", 10, new BigDecimal("170.00"));
         assertTrue(result.isSuccess());
     }

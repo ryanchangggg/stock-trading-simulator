@@ -84,7 +84,7 @@ public class TradingService {
         User user = userRepository.findById(session.getUserId()).orElse(null);
         if (user == null) return Result.failure("User not found");
         boolean ok = engine.cancelOrder(orderId, user);
-        return ok ? Result.success(null)
+        return ok ? Result.success()
                   : Result.failure("Order not found or cannot be cancelled");
     }
 

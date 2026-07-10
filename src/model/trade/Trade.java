@@ -88,12 +88,14 @@ public class Trade {
     }
 
     /**
-     * Returns the number of shares traded.
+     * Returns the trade type name (BUY or SELL).
+     */
     public String getTradeTypeName() {
         return tradeType.name();
     }
 
-
+    /**
+     * Returns the number of shares traded.
      */
     public int getQuantity() {
         return quantity;
