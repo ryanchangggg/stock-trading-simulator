@@ -78,7 +78,7 @@ This repository is intended for educational and research purposes only.
 
 The software, code, models, and any accompanying materials do not constitute investment, financial, legal, or tax advice.
 
-All investment decisions are made solely at the user's own risk. The authors assume no responsibility or liability for any financial losses or damages arising from the use of this project.
+All investment decisions are made solely at the user's own risk. The author assumes no responsibility or liability for any financial losses or damages arising from the use of this project.
 
 Past performance, backtesting results, and simulated trading outcomes do not guarantee future performance.
 
